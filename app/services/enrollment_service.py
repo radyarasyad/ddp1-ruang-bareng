@@ -5,8 +5,6 @@ jumlah orang tidak boleh melebihi kapasitas, bahkan ketika dua orang
 menekan tombol Join hampir bersamaan.
 """
 
-from datetime import datetime
-
 from app import storage
 from app.models import (
     ENROLLMENT_ACTIVE,
@@ -15,6 +13,7 @@ from app.models import (
     STATUS_COMPLETED,
     STATUS_FULL,
     compute_display_status,
+    now_wib,
 )
 
 
@@ -26,7 +25,7 @@ def join_session(conn, session_id, user_id, now=None):
     sehingga jumlah peserta yang kita hitung pasti masih benar saat kita menyimpan.
     """
     if now is None:
-        now = datetime.now()
+        now = now_wib()
 
     with storage.transaction(conn):
         session = storage.get_session(conn, session_id)
@@ -63,7 +62,7 @@ def join_session(conn, session_id, user_id, now=None):
 def leave_session(conn, session_id, user_id, now=None):
     """Membatalkan keikutsertaan. Baris tidak dihapus; status menjadi CANCELLED."""
     if now is None:
-        now = datetime.now()
+        now = now_wib()
 
     with storage.transaction(conn):
         session = storage.get_session(conn, session_id)

@@ -7,7 +7,7 @@ pengguna bisa mengirim request tanpa melewati form HTML.
 from datetime import datetime
 from urllib.parse import urlparse
 
-from app.models import MAX_CAPACITY, MIN_CAPACITY, MODE_OFFLINE, MODE_ONLINE, VALID_MODES
+from app.models import MAX_CAPACITY, MIN_CAPACITY, MODE_OFFLINE, MODE_ONLINE, VALID_MODES, now_wib
 
 MAX_TEXT_LENGTH = 100
 
@@ -50,7 +50,7 @@ def validate_session_fields(data, now=None):
     bisa menampilkan pesan tepat di bawah input yang salah.
     """
     if now is None:
-        now = datetime.now()
+        now = now_wib()
     errors = {}
 
     # --- Teks wajib -------------------------------------------------------

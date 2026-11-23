@@ -70,6 +70,20 @@ class StorageTest(unittest.TestCase):
         self.assertEqual([u.id for u in storage.list_active_members(self.conn, session.id)], [self.user.id])
 
 
+class HelperTest(unittest.TestCase):
+    def test_detect_postgres_url(self):
+        self.assertTrue(storage.is_postgres_url("postgresql://u:p@host/db"))
+        self.assertTrue(storage.is_postgres_url("postgres://u:p@host/db"))
+        self.assertFalse(storage.is_postgres_url("instance/ruangbareng.db"))
+        self.assertFalse(storage.is_postgres_url(":memory:"))
+
+    def test_placeholder_conversion(self):
+        self.assertEqual(
+            storage.to_postgres_sql("SELECT * FROM users WHERE id = ? AND username = ?"),
+            "SELECT * FROM users WHERE id = %s AND username = %s",
+        )
+
+
 class PersistenceTest(unittest.TestCase):
     def test_data_survives_reconnect(self):
         # T-12: data tetap ada setelah koneksi ditutup dan dibuka lagi.

@@ -28,9 +28,20 @@ def _load_dotenv(path):
 
 _load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-# Kunci untuk menandatangani cookie login. Nilai default hanya untuk laptop sendiri.
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-ganti-sebelum-deploy")
+# Vercel otomatis mengisi variabel VERCEL=1 di servernya.
+IS_VERCEL = bool(os.environ.get("VERCEL"))
 
-# Lokasi file database. Path relatif dihitung dari root proyek.
+# Kunci untuk menandatangani cookie login. Nilai default hanya untuk laptop sendiri.
+DEV_SECRET_KEY = "dev-only-ganti-sebelum-deploy"
+SECRET_KEY = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
+
+# Lokasi file SQLite untuk laptop. Path relatif dihitung dari root proyek.
 _db_path = os.environ.get("DATABASE_PATH", os.path.join("instance", "ruangbareng.db"))
 DATABASE_PATH = _db_path if os.path.isabs(_db_path) else os.path.join(BASE_DIR, _db_path)
+
+# Alamat Postgres untuk deploy (Neon). Integrasi Neon di Vercel mengisi DATABASE_URL;
+# beberapa template memakai nama POSTGRES_URL, jadi keduanya diterima.
+DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or ""
+
+# Yang benar-benar dipakai aplikasi: Postgres jika ada, kalau tidak SQLite.
+DATABASE_TARGET = DATABASE_URL or DATABASE_PATH

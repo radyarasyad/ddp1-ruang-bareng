@@ -17,6 +17,7 @@ from app.models import (
     STATUS_OPEN,
     StudySession,
     compute_display_status,
+    now_wib,
     slots_left,
 )
 from app.validation import clean_text, validate_session_fields
@@ -92,7 +93,7 @@ def list_open_sessions(conn, keyword=None, subject=None, now=None):
     huruf besar/kecil. subject harus sama persis (juga tanpa memedulikan huruf).
     """
     if now is None:
-        now = datetime.now()
+        now = now_wib()
     keyword_text = clean_text(keyword).lower()
     subject_text = clean_text(subject).lower()
 
@@ -133,7 +134,7 @@ def list_subjects(conn, now=None):
 def get_session_detail(conn, session_id, now=None):
     """Data lengkap satu sesi, atau None jika tidak ditemukan."""
     if now is None:
-        now = datetime.now()
+        now = now_wib()
     session = storage.get_session(conn, session_id)
     if session is None:
         return None
@@ -150,7 +151,7 @@ def get_session_detail(conn, session_id, now=None):
 def cancel_session(conn, session_id, user_id, now=None):
     """Host membatalkan sesinya. Data tidak dihapus; status menjadi CANCELLED."""
     if now is None:
-        now = datetime.now()
+        now = now_wib()
     session = storage.get_session(conn, session_id)
     if session is None:
         return False, "Sesi tidak ditemukan."
@@ -174,7 +175,7 @@ def cancel_session(conn, session_id, user_id, now=None):
 def list_my_sessions(conn, user_id, now=None):
     """Sesi yang dibuat (hosted) dan diikuti (joined) oleh satu user."""
     if now is None:
-        now = datetime.now()
+        now = now_wib()
     hosted = [_build_item(conn, s, now) for s in storage.list_sessions_by_host(conn, user_id)]
     joined = [_build_item(conn, s, now) for s in storage.list_sessions_joined(conn, user_id)]
     return {"hosted": hosted, "joined": joined}

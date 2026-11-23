@@ -1,10 +1,15 @@
-"""Akses database SQLite. Modul ini hanya membaca dan menulis data.
+"""Akses database. Modul ini hanya membaca dan menulis data.
 
+Dua jenis database didukung:
+- SQLite   : untuk laptop dan test (path file .db atau ":memory:")
+- Postgres : untuk deploy di Vercel (alamat "postgresql://...", misalnya dari Neon)
+
+Fungsi CRUD di bawah tidak perlu tahu database mana yang sedang dipakai.
 Aturan bisnis (boleh join atau tidak, siapa yang boleh membatalkan)
 ada di folder services/, bukan di sini.
 
-Semua query memakai tanda tanya (?) sebagai tempat nilai. SQLite yang
-memasukkan nilainya dengan aman, sehingga teks dari pengguna tidak bisa
+Semua query memakai tanda tanya (?) sebagai tempat nilai. Driver database
+yang memasukkan nilainya dengan aman, sehingga teks dari pengguna tidak bisa
 mengubah perintah SQL (mencegah SQL injection).
 """
 
@@ -12,11 +17,13 @@ import os
 import sqlite3
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
 
-from app.models import ENROLLMENT_ACTIVE, Enrollment, StudySession, User
+from app.models import ENROLLMENT_ACTIVE, Enrollment, StudySession, User, now_wib
 
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.sql")
+
+# Nomor kunci bebas untuk pg_advisory_xact_lock (lihat transaction()).
+ENROLLMENT_LOCK_ID = 2026
 
 
 # ---------------------------------------------------------------------------
@@ -28,15 +35,50 @@ def new_id():
 
 
 def now_text():
-    """Waktu sekarang sebagai teks ISO, misalnya '2026-12-01T14:00:05'."""
-    return datetime.now().isoformat(timespec="seconds")
+    """Waktu sekarang (WIB) sebagai teks ISO, misalnya '2026-12-01T14:00:05'."""
+    return now_wib().isoformat(timespec="seconds")
+
+
+def is_postgres_url(target):
+    """True jika target adalah alamat Postgres, bukan path file SQLite."""
+    return target.startswith(("postgres://", "postgresql://"))
+
+
+def to_postgres_sql(sql):
+    """Postgres memakai %s sebagai tempat nilai, SQLite memakai ?."""
+    return sql.replace("?", "%s")
 
 
 # ---------------------------------------------------------------------------
-# Koneksi dan transaksi
+# Koneksi
 # ---------------------------------------------------------------------------
-def connect(db_path):
-    """Membuka koneksi ke file database (dibuat otomatis jika belum ada)."""
+class Database:
+    """Pembungkus kecil supaya SQLite dan Postgres bisa dipakai dengan cara yang sama.
+
+    Kode lain cukup memanggil db.execute(sql, params) dan db.close().
+    """
+
+    def __init__(self, raw_connection, kind):
+        self.raw = raw_connection   # Koneksi asli dari sqlite3 atau psycopg
+        self.kind = kind            # "sqlite" atau "postgres"
+
+    def execute(self, sql, params=()):
+        if self.kind == "postgres":
+            return self.raw.execute(to_postgres_sql(sql), params if params else None)
+        return self.raw.execute(sql, params)
+
+    def close(self):
+        self.raw.close()
+
+
+def connect(target):
+    """Membuka koneksi. target = path file SQLite, ":memory:", atau URL Postgres."""
+    if is_postgres_url(target):
+        return _connect_postgres(target)
+    return _connect_sqlite(target)
+
+
+def _connect_sqlite(db_path):
     if db_path != ":memory:":
         os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
 
@@ -48,13 +90,32 @@ def connect(db_path):
     )
     conn.row_factory = sqlite3.Row  # Baris bisa dibaca seperti dict: row["title"].
     conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    return Database(conn, "sqlite")
+
+
+def _connect_postgres(url):
+    # Di-import di sini, bukan di atas file, supaya laptop yang hanya
+    # memakai SQLite tetap bisa jalan walau psycopg belum terpasang.
+    import psycopg
+    from psycopg.rows import dict_row
+
+    conn = psycopg.connect(
+        url,
+        autocommit=True,        # Sama seperti SQLite: transaksi diatur lewat transaction().
+        row_factory=dict_row,   # Baris berupa dict: row["title"].
+        connect_timeout=10,
+    )
+    return Database(conn, "postgres")
 
 
 def init_db(conn):
     """Membuat tabel dari schema.sql jika belum ada."""
     with open(SCHEMA_PATH, encoding="utf-8") as schema_file:
-        conn.executescript(schema_file.read())
+        schema = schema_file.read()
+    if conn.kind == "sqlite":
+        conn.raw.executescript(schema)
+    else:
+        conn.raw.execute(schema)
 
 
 @contextmanager
@@ -66,11 +127,16 @@ def transaction(conn):
             ...query 1...
             ...query 2...
 
-    BEGIN IMMEDIATE langsung mengunci database untuk penulisan. Proses lain
-    yang ingin menulis harus menunggu sampai COMMIT. Jika terjadi error di
-    tengah jalan, ROLLBACK membatalkan semua perubahan di dalam blok.
+    Di dalam blok, hanya satu proses yang boleh berjalan pada satu waktu:
+    - SQLite  : BEGIN IMMEDIATE langsung mengunci database untuk penulisan.
+    - Postgres: pg_advisory_xact_lock membuat proses lain menunggu sampai COMMIT.
+    Jika terjadi error di tengah jalan, ROLLBACK membatalkan semua perubahan.
     """
-    conn.execute("BEGIN IMMEDIATE")
+    if conn.kind == "sqlite":
+        conn.execute("BEGIN IMMEDIATE")
+    else:
+        conn.execute("BEGIN")
+        conn.execute("SELECT pg_advisory_xact_lock(?)", (ENROLLMENT_LOCK_ID,))
     try:
         yield
     except Exception:

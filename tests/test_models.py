@@ -44,6 +44,17 @@ class ComputeDisplayStatusTest(unittest.TestCase):
         self.assertEqual(compute_display_status(session, 0, NOW), STATUS_COMPLETED)
 
 
+class NowWibTest(unittest.TestCase):
+    def test_now_wib_is_utc_plus_7(self):
+        from datetime import timedelta, timezone
+        from app.models import now_wib
+        utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
+        difference = now_wib() - utc_now
+        # Selisih harus 7 jam (beri toleransi beberapa detik untuk waktu eksekusi).
+        self.assertLess(abs(difference - timedelta(hours=7)), timedelta(seconds=5))
+        self.assertIsNone(now_wib().tzinfo)
+
+
 class SlotsLeftTest(unittest.TestCase):
     def test_slots_left(self):
         self.assertEqual(slots_left(make_session(), 3), 1)

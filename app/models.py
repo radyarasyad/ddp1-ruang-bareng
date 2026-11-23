@@ -5,7 +5,7 @@ dipakai oleh semua modul tanpa membuat import melingkar.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 # ---------------------------------------------------------------------------
 # Konstanta. Ditulis sekali di sini supaya tidak ada salah ketik "OPNE" di file lain.
@@ -71,6 +71,19 @@ class Enrollment:
 # ---------------------------------------------------------------------------
 # Fungsi aturan status
 # ---------------------------------------------------------------------------
+# WIB = UTC+7, tanpa daylight saving, jadi cukup offset tetap.
+WIB = timezone(timedelta(hours=7), "WIB")
+
+
+def now_wib():
+    """Waktu sekarang di WIB, tanpa info zona (sama dengan format yang disimpan).
+
+    Jangan pakai datetime.now() biasa: server seperti Vercel memakai jam UTC,
+    sehingga "sekarang" bisa 7 jam lebih lambat dari jam di Jakarta.
+    """
+    return datetime.now(WIB).replace(tzinfo=None)
+
+
 def parse_time(text):
     """Mengubah teks ISO ("2026-12-01T14:00") menjadi objek datetime."""
     return datetime.fromisoformat(text)

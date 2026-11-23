@@ -37,9 +37,19 @@ def create_app(db_path=None):
 
     db_path bisa diisi saat testing supaya test memakai database sementara.
     """
+    # Di Vercel, tolak jalan tanpa konfigurasi yang aman daripada diam-diam salah.
+    if config.IS_VERCEL and db_path is None:
+        if config.SECRET_KEY == config.DEV_SECRET_KEY:
+            raise RuntimeError("SECRET_KEY belum diisi di Environment Variables Vercel.")
+        if not config.DATABASE_URL:
+            raise RuntimeError("DATABASE_URL (Postgres/Neon) belum diisi di Environment Variables Vercel.")
+
     app = Flask(__name__)
     app.config["SECRET_KEY"] = config.SECRET_KEY
-    app.config["DATABASE_PATH"] = db_path or config.DATABASE_PATH
+    # Path file SQLite, atau URL Postgres jika DATABASE_URL diisi.
+    app.config["DATABASE_PATH"] = db_path or config.DATABASE_TARGET
+    # Di HTTPS (Vercel), cookie login hanya dikirim lewat koneksi terenkripsi.
+    app.config["SESSION_COOKIE_SECURE"] = config.IS_VERCEL
 
     # Pastikan tabel sudah ada sebelum request pertama.
     conn = storage.connect(app.config["DATABASE_PATH"])

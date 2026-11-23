@@ -1,1 +1,3 @@
 Flask==3.1.*
+# Driver Postgres, hanya dipakai jika DATABASE_URL diisi (deploy Vercel + Neon).
+psycopg[binary]==3.3.*

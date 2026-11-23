@@ -142,6 +142,22 @@ class WebTest(unittest.TestCase):
         response = self.post("/login", {"user_id": self.users["budi"].id, "next": "https://jahat.example"})
         self.assertEqual(response.headers["Location"], "/")
 
+    def test_vercel_refuses_unsafe_config(self):
+        from app import config
+        original = (config.IS_VERCEL, config.SECRET_KEY, config.DATABASE_URL)
+        try:
+            config.IS_VERCEL = True
+            config.SECRET_KEY = config.DEV_SECRET_KEY
+            config.DATABASE_URL = "postgresql://contoh"
+            with self.assertRaises(RuntimeError):
+                create_app()  # SECRET_KEY masih default
+            config.SECRET_KEY = "rahasia-acak"
+            config.DATABASE_URL = ""
+            with self.assertRaises(RuntimeError):
+                create_app()  # DATABASE_URL kosong
+        finally:
+            config.IS_VERCEL, config.SECRET_KEY, config.DATABASE_URL = original
+
     def test_search_no_result(self):
         self.create_session_as_host()
         html = self.client.get("/?q=biologi").get_data(as_text=True)

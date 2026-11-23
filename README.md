@@ -61,6 +61,11 @@ Buka `http://127.0.0.1:5000`, klik **Masuk (akun demo)**, lalu pilih salah satu 
 
 Konfigurasi opsional: salin `.env.example` menjadi `.env`, lalu isi `SECRET_KEY` dengan nilai acak. File `.env` dan database (`instance/`) tidak ikut di-commit.
 
+## Deploy online
+
+Website dideploy ke **Vercel**, dengan database **Neon Postgres**. Langkah lengkapnya ada di [docs/deploy-vercel.md](docs/deploy-vercel.md).
+Di laptop, aplikasi tetap memakai SQLite. Postgres hanya dipakai jika variabel `DATABASE_URL` diisi.
+
 ## Menjalankan test
 
 ```powershell
@@ -74,7 +79,8 @@ python -m unittest discover -s tests -v
 | `test_storage.py` | CRUD, UNIQUE enrollment, rollback, T-12 data persisten |
 | `test_session_service.py` | Buat, cari, filter, batal (T-11), T-13 hasil kosong |
 | `test_enrollment_service.py` | T-07 s.d. T-10 join, rejoin, T-15 dua join bersamaan |
-| `test_web.py` | Alur demo end-to-end, CSRF, escape HTML, link meeting tersembunyi |
+| `test_web.py` | Alur demo end-to-end, CSRF, escape HTML, link meeting tersembunyi, konfigurasi Vercel |
+| `test_postgres.py` | Alur utama dan T-15 di Postgres sungguhan (dilewati kecuali `TEST_DATABASE_URL` diisi) |
 
 ## Alur kerja Git
 
@@ -86,6 +92,6 @@ python -m unittest discover -s tests -v
 ## Keterbatasan yang diketahui
 
 - Login hanya akun demo tanpa password. Siapa pun yang membuka aplikasi bisa memilih akun mana saja.
-- SQLite cocok untuk satu server. Untuk deploy dengan banyak instance perlu database server (misalnya PostgreSQL).
+- Di Postgres, semua join dan leave diantrekan dengan satu kunci (`pg_advisory_xact_lock`). Cara ini aman dan sederhana, tapi bisa memperlambat jika ada ratusan join per detik.
 - Belum ada waitlist, edit sesi, notifikasi, atau moderasi (fase 2).
 - Tampilan hanya tema terang.
