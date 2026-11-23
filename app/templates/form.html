@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Buat sesi{% endblock %}
+
+{# Macro kecil untuk menampilkan pesan error tepat di bawah input. #}
+{% macro field_error(name) -%}
+  {% if errors.get(name) %}<p class="field__error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
+{%- endmacro %}
+{% macro invalid(name, hint_id=None) -%}
+  {%- if errors.get(name) %} aria-invalid="true" aria-describedby="{{ name }}-error{% if hint_id %} {{ hint_id }}{% endif %}"
+  {%- elif hint_id %} aria-describedby="{{ hint_id }}"{% endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="form-page">
+  <h1>Buat sesi belajar</h1>
+  <p class="lead">Isi informasi minimum supaya orang lain bisa memutuskan ikut atau tidak.</p>
+
+  {% if errors %}
+    <div class="error-summary" role="alert" aria-labelledby="judul-error">
+      <h2 id="judul-error">Ada {{ errors|length }} isian yang perlu diperbaiki</h2>
+      <ul>
+        {% for name, message in errors.items() %}
+          <li><a href="#{{ name }}">{{ message }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('new_session') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <fieldset>
+      <legend>Tentang sesi</legend>
+      <div class="field">
+        <label for="title">Judul sesi</label>
+        <input id="title" name="title" type="text" maxlength="100" required
+               value="{{ form.get('title', '') }}"{{ invalid('title') }}>
+        {{ field_error('title') }}
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="subject">Mata kuliah</label>
+          <input id="subject" name="subject" type="text" maxlength="100" required
+                 placeholder="Contoh: Struktur Data" value="{{ form.get('subject', '') }}"{{ invalid('subject') }}>
+          {{ field_error('subject') }}
+        </div>
+        <div class="field">
+          <label for="topic">Topik <span class="optional">(opsional)</span></label>
+          <input id="topic" name="topic" type="text" maxlength="100"
+                 placeholder="Contoh: latihan soal linked list" value="{{ form.get('topic', '') }}"{{ invalid('topic') }}>
+          {{ field_error('topic') }}
+        </div>
+      </div>
+      <div class="field">
+        <label for="description">Rencana sesi <span class="optional">(opsional)</span></label>
+        <textarea id="description" name="description" rows="4"
+                  placeholder="Apa yang akan dibahas, apa yang perlu dibawa">{{ form.get('description', '') }}</textarea>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Waktu</legend>
+      <div class="field-row">
+        <div class="field">
+          <label for="starts_at">Mulai</label>
+          <input id="starts_at" name="starts_at" type="datetime-local" required
+                 value="{{ form.get('starts_at', '') }}"{{ invalid('starts_at') }}>
+          {{ field_error('starts_at') }}
+        </div>
+        <div class="field">
+          <label for="ends_at">Selesai</label>
+          <input id="ends_at" name="ends_at" type="datetime-local" required
+                 value="{{ form.get('ends_at', '') }}"{{ invalid('ends_at') }}>
+          {{ field_error('ends_at') }}
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tempat</legend>
+      <div class="field">
+        <span class="label" id="mode-label">Mode</span>
+        <div class="choice-group" role="radiogroup" aria-labelledby="mode-label"{{ invalid('mode') }}>
+          <label class="choice">
+            <input type="radio" name="mode" value="OFFLINE" {% if form.get('mode', 'OFFLINE') == 'OFFLINE' %}checked{% endif %}>
+            <span>Offline <span class="choice__hint">tatap muka di kampus atau tempat publik</span></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="mode" value="ONLINE" {% if form.get('mode') == 'ONLINE' %}checked{% endif %}>
+            <span>Online <span class="choice__hint">lewat link meeting</span></span>
+          </label>
+        </div>
+        {{ field_error('mode') }}
+      </div>
+
+      <div class="mode-fields" data-mode="OFFLINE">
+        <div class="field">
+          <label for="location_text">Lokasi</label>
+          <input id="location_text" name="location_text" type="text" maxlength="120"
+                 placeholder="Contoh: Perpustakaan Pusat UI, lantai 2"
+                 value="{{ form.get('location_text', '') }}"{{ invalid('location_text', 'location-hint') }}>
+          <p class="field__hint" id="location-hint">Pakai tempat publik atau ruang kampus. Jangan menulis alamat rumah.</p>
+          {{ field_error('location_text') }}
+        </div>
+        <div class="field">
+          <label for="map_url">Link Google Maps <span class="optional">(opsional)</span></label>
+          <input id="map_url" name="map_url" type="url" inputmode="url"
+                 placeholder="https://maps.app.goo.gl/..." value="{{ form.get('map_url', '') }}"{{ invalid('map_url') }}>
+          {{ field_error('map_url') }}
+        </div>
+      </div>
+
+      <div class="mode-fields" data-mode="ONLINE">
+        <div class="field">
+          <label for="meeting_url">Link meeting</label>
+          <input id="meeting_url" name="meeting_url" type="url" inputmode="url"
+                 placeholder="https://meet.google.com/..." value="{{ form.get('meeting_url', '') }}"{{ invalid('meeting_url', 'meeting-hint') }}>
+          <p class="field__hint" id="meeting-hint">Hanya peserta yang sudah bergabung yang bisa melihat link ini.</p>
+          {{ field_error('meeting_url') }}
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Kapasitas</legend>
+      <div class="field field--narrow">
+        <label for="capacity">Jumlah orang</label>
+        <input id="capacity" name="capacity" type="number" inputmode="numeric"
+               min="{{ min_capacity }}" max="{{ max_capacity }}" required
+               value="{{ form.get('capacity', '') }}"{{ invalid('capacity', 'capacity-hint') }}>
+        <p class="field__hint" id="capacity-hint">Sudah termasuk kamu sebagai host. Kapasitas 5 berarti kamu ditambah 4 peserta. Rentang {{ min_capacity }}–{{ max_capacity }}.</p>
+        {{ field_error('capacity') }}
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button class="button button--primary" type="submit">Simpan dan tampilkan sesi</button>
+      <a href="{{ url_for('index') }}">Batal</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Menyembunyikan isian yang tidak relevan dengan mode yang dipilih.
+  // Tanpa JavaScript, semua isian tetap tampil dan form tetap bisa dipakai.
+  (function () {
+    var radios = document.querySelectorAll('input[name="mode"]');
+    var groups = document.querySelectorAll('.mode-fields');
+    function update() {
+      var checked = document.querySelector('input[name="mode"]:checked');
+      var mode = checked ? checked.value : 'OFFLINE';
+      groups.forEach(function (group) { group.hidden = group.dataset.mode !== mode; });
+    }
+    radios.forEach(function (radio) { radio.addEventListener('change', update); });
+    update();
+  })();
+</script>
+{% endblock %}

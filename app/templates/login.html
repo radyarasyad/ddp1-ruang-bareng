@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Masuk{% endblock %}
+
+{% block content %}
+<div class="form-page form-page--narrow">
+  <h1>Masuk dengan akun demo</h1>
+  <p class="lead">Prototipe ini belum memakai SSO UI. Pilih salah satu akun demo untuk mencoba alur membuat dan bergabung ke sesi. Tidak ada password.</p>
+
+  {% if users %}
+    <form method="post" action="{{ url_for('login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ next_path }}">
+      <fieldset>
+        <legend>Akun demo</legend>
+        <div class="choice-group choice-group--stack">
+          {% for user in users %}
+            <label class="choice">
+              <input type="radio" name="user_id" value="{{ user.id }}" required {% if loop.first %}checked{% endif %}>
+              <span>{{ user.display_name }} <span class="choice__hint">@{{ user.username }}</span></span>
+            </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <div class="form-actions">
+        <button class="button button--primary" type="submit">Masuk</button>
+      </div>
+    </form>
+  {% else %}
+    <div class="empty">
+      <p class="empty__title">Belum ada akun demo.</p>
+      <p>Jalankan <code>python scripts/seed_demo.py</code> di terminal, lalu muat ulang halaman ini.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

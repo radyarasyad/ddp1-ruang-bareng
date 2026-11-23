@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% set s = d.session %}
+{% block title %}{{ s.title }}{% endblock %}
+
+{% block content %}
+<p class="back"><a href="{{ url_for('index') }}">Kembali ke daftar sesi</a></p>
+
+<div class="detail">
+  <article class="detail__main">
+    <p class="eyebrow">{{ s.subject }}</p>
+    <h1>{{ s.title }}</h1>
+    {% if s.topic %}<p class="lead">{{ s.topic }}</p>{% endif %}
+
+    <dl class="facts">
+      <div>
+        <dt>Waktu</dt>
+        <dd>{{ s.starts_at|day_label }}<br>{{ s.starts_at|clock }}–{{ s.ends_at|clock }} WIB</dd>
+      </div>
+      <div>
+        <dt>Mode</dt>
+        <dd>{% if s.mode == 'ONLINE' %}Online{% else %}Offline (tatap muka){% endif %}</dd>
+      </div>
+      <div>
+        <dt>{% if s.mode == 'ONLINE' %}Link meeting{% else %}Lokasi{% endif %}</dt>
+        <dd>
+          {% if s.mode == 'OFFLINE' %}
+            {{ s.location_text }}
+            {% if s.map_url %}
+              <br><a href="{{ s.map_url }}" target="_blank" rel="noopener noreferrer">Buka di Google Maps<span class="sr-only"> (tab baru)</span></a>
+            {% endif %}
+          {% elif is_host or is_member %}
+            <a href="{{ s.meeting_url }}" target="_blank" rel="noopener noreferrer">Buka link meeting<span class="sr-only"> (tab baru)</span></a>
+          {% else %}
+            <span class="muted">Terlihat setelah kamu bergabung.</span>
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>Host</dt>
+        <dd>{{ d.host.display_name if d.host else 'Tidak diketahui' }}</dd>
+      </div>
+    </dl>
+
+    {% if s.description %}
+      <section class="prose" aria-labelledby="judul-deskripsi">
+        <h2 id="judul-deskripsi">Rencana sesi</h2>
+        <p>{{ s.description }}</p>
+      </section>
+    {% endif %}
+
+    <section aria-labelledby="judul-peserta">
+      <h2 id="judul-peserta">Siapa saja yang ikut</h2>
+      <ul class="people">
+        <li><span>{{ d.host.display_name if d.host else 'Host' }}</span> <span class="tag">Host</span></li>
+        {% for member in d.members %}
+          <li><span>{{ member.display_name }}</span></li>
+        {% endfor %}
+      </ul>
+    </section>
+  </article>
+
+  <aside class="detail__panel" aria-labelledby="judul-panel">
+    <h2 id="judul-panel" class="sr-only">Status dan pendaftaran</h2>
+    <div class="panel__status">
+      {{ status_badge(d.display_status) }}
+      <p class="capacity-big"><strong>{{ d.total_people }}</strong> dari {{ s.capacity }} orang</p>
+      <div class="meter" aria-hidden="true">
+        <span style="width: {{ (d.total_people / s.capacity * 100)|round|int }}%"></span>
+      </div>
+      <p class="muted">
+        {% if d.display_status == 'OPEN' %}Sisa {{ d.slots_left }} tempat. Kapasitas sudah termasuk host.
+        {% elif d.display_status == 'FULL' %}Sesi ini sudah mencapai kapasitas.
+        {% elif d.display_status == 'CANCELLED' %}Sesi ini dibatalkan host dan tidak menerima peserta.
+        {% else %}Sesi ini sudah selesai.{% endif %}
+      </p>
+    </div>
+
+    <div class="panel__actions">
+      {% if d.display_status in ['CANCELLED', 'COMPLETED'] %}
+        <a class="button" href="{{ url_for('index') }}">Jelajahi sesi lain</a>
+      {% elif not current_user %}
+        <a class="button button--primary" href="{{ url_for('login', next=request.path) }}">Masuk untuk bergabung</a>
+      {% elif is_host %}
+        <form method="post" action="{{ url_for('cancel', session_id=s.id) }}"
+              onsubmit="return confirm('Batalkan sesi ini? Peserta tidak bisa bergabung lagi.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="button button--danger" type="submit">Batalkan sesi</button>
+        </form>
+        <p class="muted small">Kamu host sesi ini.</p>
+      {% elif is_member %}
+        <p class="joined-note">Kamu sudah terdaftar di sesi ini.</p>
+        <form method="post" action="{{ url_for('leave', session_id=s.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="button" type="submit">Keluar dari sesi</button>
+        </form>
+      {% elif d.display_status == 'FULL' %}
+        <a class="button" href="{{ url_for('index') }}">Cari sesi lain</a>
+      {% else %}
+        <form method="post" action="{{ url_for('join', session_id=s.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="button button--primary button--block" type="submit">Gabung sesi</button>
+        </form>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

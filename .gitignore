@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+venv/
+
+# Rahasia dan data lokal: jangan pernah di-commit
+.env
+instance/
+*.db
+*.db-journal
+
+# Konfigurasi lokal editor/agent
+.claude/

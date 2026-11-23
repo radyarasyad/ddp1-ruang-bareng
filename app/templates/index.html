@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_macros.html" import session_row %}
+{% block title %}Jelajahi sesi{% endblock %}
+
+{% block content %}
+<section class="intro">
+  <div class="intro__text">
+    <h1>Sesi belajar yang bisa kamu ikuti</h1>
+    <p class="lead">Cari berdasarkan mata kuliah atau topik, cek jadwal dan sisa tempat, lalu gabung tanpa perlu koordinasi panjang di grup chat.</p>
+  </div>
+
+  <form class="search" method="get" action="{{ url_for('index') }}" role="search">
+    <div class="field">
+      <label for="q">Kata kunci</label>
+      <input id="q" name="q" type="search" value="{{ keyword }}" placeholder="Contoh: linked list, kalkulus">
+    </div>
+    <div class="field">
+      <label for="subject">Mata kuliah</label>
+      <select id="subject" name="subject">
+        <option value="">Semua mata kuliah</option>
+        {% for name in subjects %}
+          <option value="{{ name }}" {% if name|lower == subject|lower %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="search__actions">
+      <button class="button button--primary" type="submit">Cari sesi</button>
+      {% if has_filter %}<a href="{{ url_for('index') }}">Hapus filter</a>{% endif %}
+    </div>
+  </form>
+</section>
+
+<div class="listing">
+  <section class="listing__main" aria-labelledby="judul-daftar">
+    <div class="section-head">
+      <h2 id="judul-daftar">{% if has_filter %}Hasil pencarian{% else %}Sesi terdekat{% endif %}</h2>
+      <p class="muted">{{ items|length }} sesi</p>
+    </div>
+
+    {% if items %}
+      <ul class="session-list">
+        {% for item in items %}{{ session_row(item) }}{% endfor %}
+      </ul>
+    {% elif has_filter %}
+      <div class="empty">
+        <p class="empty__title">Tidak ada sesi yang cocok dengan kata kunci atau filter ini.</p>
+        <p>Coba kata kunci yang lebih umum, atau buat sesi sendiri untuk topik ini.</p>
+        <a class="button" href="{{ url_for('index') }}">Hapus filter</a>
+      </div>
+    {% else %}
+      <div class="empty">
+        <p class="empty__title">Belum ada sesi yang tersedia.</p>
+        <p>Jadilah orang pertama yang membuat sesi.</p>
+        <a class="button button--primary" href="{{ url_for('new_session') }}">Buat sesi</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <aside class="listing__aside" aria-labelledby="judul-host">
+    <h2 id="judul-host">Punya rencana belajar?</h2>
+    <p>Buat sesi dengan topik, jadwal, dan tempat yang jelas. Orang lain bisa langsung melihat sisa tempat dan bergabung.</p>
+    <a class="button button--primary" href="{{ url_for('new_session') }}">Buat sesi</a>
+    <dl class="rules">
+      <div><dt>Kapasitas</dt><dd>Sudah termasuk kamu sebagai host.</dd></div>
+      <div><dt>Offline</dt><dd>Tulis nama ruang atau tempat publik. Jangan alamat rumah.</dd></div>
+      <div><dt>Online</dt><dd>Link meeting hanya terlihat oleh peserta yang sudah bergabung.</dd></div>
+    </dl>
+  </aside>
+</div>
+{% endblock %}

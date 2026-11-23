@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import session_row %}
+{% block title %}Sesi saya{% endblock %}
+
+{% block content %}
+<h1>Sesi saya</h1>
+
+<div class="my-grid">
+  <section aria-labelledby="judul-ikut">
+    <div class="section-head">
+      <h2 id="judul-ikut">Yang kamu ikuti</h2>
+      <p class="muted">{{ joined|length }} sesi</p>
+    </div>
+    {% if joined %}
+      <ul class="session-list">{% for item in joined %}{{ session_row(item) }}{% endfor %}</ul>
+    {% else %}
+      <div class="empty">
+        <p class="empty__title">Kamu belum bergabung ke sesi mana pun.</p>
+        <a class="button" href="{{ url_for('index') }}">Jelajahi sesi</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="judul-host">
+    <div class="section-head">
+      <h2 id="judul-host">Yang kamu buat</h2>
+      <p class="muted">{{ hosted|length }} sesi</p>
+    </div>
+    {% if hosted %}
+      <ul class="session-list">{% for item in hosted %}{{ session_row(item) }}{% endfor %}</ul>
+    {% else %}
+      <div class="empty">
+        <p class="empty__title">Kamu belum membuat sesi.</p>
+        <a class="button button--primary" href="{{ url_for('new_session') }}">Buat sesi</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

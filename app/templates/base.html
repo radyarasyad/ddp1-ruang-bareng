@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}RuangBareng{% endblock %} · Fasilkom Study Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Inter:wght@400;500&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#konten">Langsung ke konten</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="wordmark" href="{{ url_for('index') }}">
+        <span class="wordmark__name">RuangBareng</span>
+        <span class="wordmark__sub">Fasilkom Study Hub</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Navigasi utama">
+        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Jelajahi</a>
+        <a href="{{ url_for('my_sessions') }}" {% if request.endpoint == 'my_sessions' %}aria-current="page"{% endif %}>Sesi saya</a>
+        <a class="button button--primary" href="{{ url_for('new_session') }}">Buat sesi</a>
+      </nav>
+
+      <div class="account">
+        {% if current_user %}
+          <span class="account__name">{{ current_user.display_name }}</span>
+          <form method="post" action="{{ url_for('logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="link-button" type="submit">Keluar</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('login', next=request.path) }}">Masuk (akun demo)</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main id="konten" class="page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack" role="status">
+          {% for category, message in messages %}
+            <p class="flash flash--{{ category }}">
+              <strong class="flash__label">{% if category == 'error' %}Gagal{% elif category == 'success' %}Berhasil{% else %}Info{% endif %}:</strong>
+              {{ message }}
+            </p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>RuangBareng adalah prototipe proyek DDP1 Fasilkom UI. Login memakai akun demo, bukan SSO UI.</p>
+  </footer>
+</body>
+</html>

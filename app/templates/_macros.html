@@ -1,0 +1,30 @@
+{# Potongan template yang dipakai ulang di beberapa halaman. #}
+
+{% macro status_badge(status) -%}
+  {%- set labels = {'OPEN': 'Terbuka', 'FULL': 'Penuh', 'CANCELLED': 'Dibatalkan', 'COMPLETED': 'Selesai'} -%}
+  <span class="badge badge--{{ status|lower }}">{{ labels.get(status, status) }}</span>
+{%- endmacro %}
+
+{% macro session_row(item) -%}
+  {%- set s = item.session -%}
+  <li class="session-row">
+    <div class="date-chip" aria-hidden="true">
+      <span class="date-chip__day">{{ s.starts_at|day_number }}</span>
+      <span class="date-chip__month">{{ s.starts_at|month_short }}</span>
+    </div>
+    <div class="session-row__body">
+      <p class="eyebrow">{{ s.subject }}</p>
+      <h3 class="session-row__title">
+        <a href="{{ url_for('session_detail', session_id=s.id) }}">{{ s.title }}</a>
+      </h3>
+      <p class="session-row__meta">
+        <span>{{ s.starts_at|day_label }}, {{ s.starts_at|clock }}–{{ s.ends_at|clock }}</span>
+        <span>{% if s.mode == 'ONLINE' %}Online{% else %}{{ s.location_text }}{% endif %}</span>
+      </p>
+    </div>
+    <div class="session-row__side">
+      <p class="capacity-text"><strong>{{ item.total_people }}/{{ s.capacity }}</strong> orang</p>
+      {{ status_badge(item.display_status) }}
+    </div>
+  </li>
+{%- endmacro %}

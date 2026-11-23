@@ -34,7 +34,8 @@ Setiap fungsi service mengembalikan **tuple `(berhasil, hasil)`**. `berhasil` be
 ```
 app/models.py        -> konstanta status/mode, dataclass User, StudySession, Enrollment,
                         compute_display_status(session, active_count, now), slots_left(session, active_count)
-app/validation.py    -> validate_session(data, now=None) -> list[str], is_valid_http_url(url) -> bool
+app/validation.py    -> validate_session(data, now=None) -> list[str], is_valid_http_url(url) -> bool,
+                        validate_session_fields(data, now=None) -> dict[str, str]  (D-07)
 app/storage.py       -> connect(db_path), init_db(conn), transaction(conn),
                         fungsi CRUD (lihat Issue #4)
 app/services/session_service.py    -> create_session, list_open_sessions,
@@ -249,7 +250,7 @@ Menggabungkan validasi dan storage menjadi aturan bisnis untuk sesi belajar (US-
 - `tests/test_session_service.py`
 
 ### Pekerjaan
-1. `create_session(conn, host_user_id, data, now=None) -> (bool, StudySession | list[str])`:
+1. `create_session(conn, host_user_id, data, now=None) -> (bool, StudySession | dict[str, str])` (dict error per field, keputusan D-07):
    validasi dulu; kalau ada error, kembalikan `(False, errors)` tanpa menyimpan apa pun. Kalau valid, simpan dengan status `OPEN`.
 2. `list_open_sessions(conn, keyword=None, subject=None, now=None) -> list[dict]`:
    - Hanya menampilkan sesi yang status tampilannya OPEN atau FULL (US-01).
