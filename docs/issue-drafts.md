@@ -28,13 +28,13 @@ Keputusan ini mengikuti default blueprint (Lampiran B) dan wajib dicatat di `doc
 
 ## Kontrak antar-modul
 
-Bagian ini mengunci nama fungsi supaya issue #2, #3, dan #4 bisa dikerjakan paralel tanpa saling menunggu.
+Bagian ini mengunci nama fungsi supaya issue #3 dan #4, lalu #5 dan #6, bisa dikerjakan paralel tanpa saling menunggu.
 Setiap fungsi service mengembalikan **tuple `(berhasil, hasil)`**. `berhasil` bertipe `bool`; `hasil` berisi objek, daftar pesan error, atau satu pesan teks.
 
 ```
 app/models.py        -> konstanta status/mode, dataclass User, StudySession, Enrollment,
-                        compute_display_status(session, active_count, now)
-app/validation.py    -> validate_session(data) -> list[str], is_valid_http_url(url) -> bool
+                        compute_display_status(session, active_count, now), slots_left(session, active_count)
+app/validation.py    -> validate_session(data, now=None) -> list[str], is_valid_http_url(url) -> bool
 app/storage.py       -> connect(db_path), init_db(conn), transaction(conn),
                         fungsi CRUD (lihat Issue #4)
 app/services/session_service.py    -> create_session, list_open_sessions,
@@ -69,7 +69,7 @@ Pembagian ini menyeimbangkan jumlah commit, dan setiap orang memegang setidaknya
 | C | #3, #8 | Validasi sekaligus pesan error di UI |
 | D | #4, #7 | Storage sekaligus adapter web yang memakainya |
 
-Untuk 3 anggota: gabungkan #1 ke pemilik #2, dan bagi #7 serta #8 ke dua orang yang berbeda.
+Untuk 3 anggota: A memegang #1, #2, #6; B memegang #3, #5, #8; C memegang #4, #7.
 
 ## Aturan umum setiap issue
 
@@ -138,7 +138,7 @@ Mendefinisikan bentuk data `User`, `StudySession`, dan `Enrollment` beserta kons
    - `User(id, username, display_name, created_at)`
    - `StudySession(id, host_user_id, title, subject, topic, description, starts_at, ends_at, mode, location_text, map_url, meeting_url, capacity, status, created_at)`
    - `Enrollment(id, session_id, user_id, status, joined_at)`
-3. `compute_display_status(session, active_count, now)` mengembalikan status yang ditampilkan ke pengguna:
+3. `compute_display_status(session, active_count, now)` mengembalikan status yang ditampilkan ke pengguna. `now` bertipe `datetime`, sedangkan `ends_at` berupa teks (D-06), jadi ubah dulu dengan `datetime.fromisoformat` sebelum dibandingkan:
    - `CANCELLED` atau `COMPLETED` dikembalikan apa adanya.
    - `now` sudah melewati `ends_at` → `COMPLETED`.
    - `active_count + 1 >= capacity` (host ikut dihitung, D-01) → `FULL`.
@@ -212,7 +212,7 @@ Menyimpan data secara persisten di SQLite, sehingga data tetap ada setelah aplik
 ### Pekerjaan
 1. `app/schema.sql` mengikuti blueprint §11.4, dengan dua penyesuaian:
    - `CHECK (status IN ('OPEN','CANCELLED','COMPLETED'))` untuk `study_sessions` (keputusan D-02).
-   - `CHECK (capacity BETWEEN 2 AND 20)`.
+   - `CHECK (capacity BETWEEN 2 AND 20)`. Angka ini harus sama dengan `MIN_CAPACITY` dan `MAX_CAPACITY` di `models.py`; kalau salah satu diubah, ubah keduanya.
 2. `connect(db_path) -> sqlite3.Connection`: aktifkan `PRAGMA foreign_keys = ON`, atur `row_factory = sqlite3.Row`, dan buka dengan `isolation_level=None` supaya transaksi dikontrol manual.
 3. `init_db(conn)`: menjalankan `schema.sql` dengan `CREATE TABLE IF NOT EXISTS`.
 4. `transaction(conn)`: context manager (`@contextmanager`) yang menjalankan `BEGIN IMMEDIATE`, lalu `COMMIT` kalau berhasil dan `ROLLBACK` kalau ada exception (keputusan D-04).
@@ -346,7 +346,7 @@ Membuat semua fitur bisa dipakai lewat browser. Route hanya menerima input, mema
 5. Pesan hasil join/leave/cancel ditampilkan dengan `flash()`.
 6. Biarkan autoescape Jinja tetap aktif. Jangan pakai filter `|safe` untuk teks yang diketik pengguna.
 7. Link Maps dan meeting dibuka dengan `target="_blank" rel="noopener noreferrer"`.
-8. `scripts/seed_demo.py` membuat 3 akun demo (`Host A`, `Peserta B`, `Peserta C`) dan 2 sesi contoh. Semua data diberi label **DEMO** dan tidak boleh disajikan sebagai penggunaan nyata.
+8. `scripts/seed_demo.py` membuat 6 akun demo (`Host A`, `Peserta B` sampai `Peserta F`) dan 2 sesi contoh. Enam akun dibutuhkan supaya demo blueprint §21.1 bisa dijalankan: sesi kapasitas 5 diisi host dan 4 peserta, lalu peserta keenam ditolak. Semua data diberi label **DEMO** dan tidak boleh disajikan sebagai penggunaan nyata.
 9. Tambahkan cara menjalankan ke README: `flask --app app.web run`.
 
 ### Test case wajib (pakai `app.test_client()`)
@@ -375,7 +375,7 @@ Membuat tampilan yang jelas, bisa dipakai di HP, mudah diakses, dan tidak terlih
 
 ### Pekerjaan
 1. **Warna:** warna utama deep teal `#0F766E` dengan teks putih (kontras 5,5:1). Latar `#F8FAFC`, kartu `#FFFFFF`, border `#E2E8F0`, teks `#0F172A`, teks sekunder `#475569`. Didefinisikan sebagai CSS variable di `:root`.
-2. **Font:** Cabinet Grotesk untuk judul (file disimpan di `static/fonts/`, jangan ambil dari CDN pihak ketiga). Inter 400/500 untuk teks biasa. Kalau Cabinet Grotesk sulit dipasang, pakai Bricolage Grotesque. Maksimal 2 keluarga font dan 3 ketebalan.
+2. **Font:** Cabinet Grotesk untuk judul (file disimpan di `static/fonts/`, jangan ambil dari CDN pihak ketiga). Inter 400/500 untuk teks biasa, juga disimpan di `static/fonts/`. Kalau Cabinet Grotesk sulit dipasang, pakai Bricolage Grotesque. Maksimal 2 keluarga font dan 3 ketebalan.
 3. **Kartu sesi** (blueprint §9.2): judul atau mata kuliah, waktu, mode, lokasi ringkas atau label "Online", slot dalam format `3/5 orang (termasuk host)`, nama host, dan status.
 4. Status ditulis sebagai **teks** (OPEN/FULL/CANCELLED/COMPLETED), bukan hanya warna.
 5. State kosong dan error memakai pesan dari blueprint §9.3, masing-masing dengan tombol aksi.
