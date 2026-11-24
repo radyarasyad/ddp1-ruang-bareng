@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard · RuangBareng – Fasilkom Study Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Inter:wght@400;500&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/dashboard-page.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#konten">Langsung ke konten</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="wordmark" href="#beranda">
+        <span class="wordmark__name">RuangBareng</span>
+        <span class="wordmark__sub">Fasilkom Study Hub</span>
+      </a>
+
+      <nav class="site-nav" id="site-nav" aria-label="Navigasi utama" hidden>
+        <a href="#beranda" data-nav="beranda">Beranda</a>
+        <a href="#jelajahi" data-nav="jelajahi">Jelajahi</a>
+        <a href="#saya" data-nav="saya">Sesi saya</a>
+        <a class="button button--primary" href="#buat" data-nav="buat">Buat sesi</a>
+      </nav>
+
+      <div class="account" id="account" hidden>
+        <a class="account__name" href="#profil" data-nav="profil" id="account-name"></a>
+        <button class="link-button" type="button" id="logout-button">Keluar</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="konten" class="page">
+    <!-- ====================== MEMUAT ====================== -->
+    <section data-view="memuat" class="view view--center">
+      <p class="loading" role="status">Memuat akunmu...</p>
+    </section>
+
+    <!-- ================= LENGKAPI PROFIL ================= -->
+    <section data-view="lengkapi" class="view form-page form-page--narrow" hidden>
+      <h1 tabindex="-1">Lengkapi profilmu</h1>
+      <p class="lead">Akunmu sudah dibuat, tapi username dan nama tampilan belum tersimpan. Isi sekali saja.</p>
+      <div class="notice" id="lengkapi-notice" role="alert" hidden></div>
+      <form id="profile-form" novalidate>
+        <fieldset>
+          <legend>Identitas di RuangBareng</legend>
+          <div class="field">
+            <label for="pf-display-name">Nama tampilan</label>
+            <input id="pf-display-name" name="displayName" type="text" maxlength="50" autocomplete="nickname" required>
+          </div>
+          <div class="field">
+            <label for="pf-username">Username</label>
+            <input id="pf-username" name="username" type="text" maxlength="20" autocapitalize="none" spellcheck="false"
+                   aria-describedby="pf-username-hint" required>
+            <p class="field__hint" id="pf-username-hint">3–20 karakter: huruf kecil, angka, atau garis bawah.</p>
+          </div>
+        </fieldset>
+        <button class="button button--primary" type="submit">Simpan profil</button>
+      </form>
+    </section>
+
+    <!-- ====================== BERANDA ====================== -->
+    <section data-view="beranda" class="view" hidden>
+      <div class="notice notice--info verify" id="verify-banner" hidden>
+        <p><strong class="notice__label">Info:</strong> Email <span id="verify-email"></span> belum diverifikasi. Cek kotak masuk atau folder spam.</p>
+        <button class="link-button" type="button" id="resend-verification">Kirim ulang email verifikasi</button>
+      </div>
+
+      <div class="hello">
+        <div>
+          <p class="eyebrow" id="today-label"></p>
+          <h1 tabindex="-1" id="hello-title">Halo.</h1>
+          <p class="lead">Mau belajar apa hari ini? Cari sesi yang cocok atau buka sesimu sendiri.</p>
+        </div>
+        <div class="hello__actions">
+          <a class="button button--primary" href="#buat">Buat sesi</a>
+          <a class="button" href="#jelajahi">Cari sesi</a>
+        </div>
+      </div>
+
+      <dl class="stats">
+        <div class="stats__item">
+          <dt>Sesi terbuka sekarang</dt>
+          <dd id="stat-open">–</dd>
+        </div>
+        <div class="stats__item">
+          <dt>Sesi yang kamu ikuti</dt>
+          <dd id="stat-joined">–</dd>
+        </div>
+        <div class="stats__item">
+          <dt>Sesi aktif yang kamu host</dt>
+          <dd id="stat-hosted">–</dd>
+        </div>
+      </dl>
+
+      <div class="listing">
+        <div class="listing__main">
+          <section aria-labelledby="agenda-title">
+            <div class="section-head">
+              <h2 id="agenda-title">Jadwalmu berikutnya</h2>
+              <a href="#saya">Lihat semua</a>
+            </div>
+            <div id="agenda-list"></div>
+          </section>
+
+          <section aria-labelledby="fresh-title" class="listing__block">
+            <div class="section-head">
+              <h2 id="fresh-title">Sesi terbuka yang bisa kamu ikuti</h2>
+              <a href="#jelajahi">Jelajahi semua</a>
+            </div>
+            <div id="fresh-list"></div>
+          </section>
+        </div>
+
+        <aside class="listing__aside" aria-labelledby="rules-title">
+          <h2 id="rules-title">Aturan singkat</h2>
+          <dl class="rules">
+            <dt>Kapasitas termasuk host</dt>
+            <dd>Sesi berkapasitas 5 = host + 4 peserta. Sistem menolak pendaftaran saat penuh.</dd>
+            <dt>Satu orang, satu tempat</dt>
+            <dd>Kamu tidak bisa terdaftar dua kali di sesi yang sama. Keluar kapan saja sebelum sesi selesai.</dd>
+            <dt>Tempat publik</dt>
+            <dd>Pakai ruang kampus atau tempat umum. Jangan menulis alamat rumah.</dd>
+            <dt>Link meeting</dt>
+            <dd>Hanya terlihat oleh host dan peserta yang sudah bergabung.</dd>
+          </dl>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ====================== JELAJAHI ====================== -->
+    <section data-view="jelajahi" class="view" hidden>
+      <div class="intro">
+        <div class="intro__text">
+          <h1 tabindex="-1">Jelajahi sesi</h1>
+          <p class="lead">Semua sesi yang masih terbuka, dari yang paling cepat dimulai. Daftar ini diperbarui otomatis.</p>
+        </div>
+
+        <form class="search" id="search-form" role="search" novalidate>
+          <div class="field">
+            <label for="search-keyword">Kata kunci</label>
+            <input id="search-keyword" name="keyword" type="search" placeholder="Judul, topik, host, atau lokasi">
+          </div>
+          <div class="field">
+            <label for="search-subject">Mata kuliah</label>
+            <select id="search-subject" name="subject">
+              <option value="">Semua mata kuliah</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="search-mode">Mode</label>
+            <select id="search-mode" name="mode">
+              <option value="">Online dan offline</option>
+              <option value="OFFLINE">Offline saja</option>
+              <option value="ONLINE">Online saja</option>
+            </select>
+          </div>
+          <div class="search__actions">
+            <label class="check">
+              <input type="checkbox" name="hideFull">
+              <span>Sembunyikan sesi penuh</span>
+            </label>
+            <button class="link-button" type="reset">Hapus filter</button>
+          </div>
+        </form>
+      </div>
+
+      <p class="result-count" id="result-count" role="status" aria-live="polite"></p>
+      <div id="explore-list"></div>
+    </section>
+
+    <!-- ====================== DETAIL ====================== -->
+    <section data-view="sesi" class="view" hidden>
+      <p class="back"><a href="#jelajahi">Kembali ke daftar sesi</a></p>
+      <div id="detail-root"></div>
+    </section>
+
+    <!-- ====================== BUAT SESI ====================== -->
+    <section data-view="buat" class="view form-page" hidden>
+      <h1 tabindex="-1">Buat sesi belajar</h1>
+      <p class="lead">Isi informasi minimum supaya orang lain bisa memutuskan ikut atau tidak.</p>
+
+      <div class="error-summary" id="create-summary" role="alert" tabindex="-1" hidden>
+        <h2 id="create-summary-title"></h2>
+        <ul id="create-summary-list"></ul>
+      </div>
+      <div class="notice" id="create-notice" role="alert" hidden></div>
+
+      <form id="create-form" novalidate>
+        <fieldset>
+          <legend>Tentang sesi</legend>
+          <div class="field">
+            <label for="cf-title">Judul sesi</label>
+            <input id="cf-title" name="title" type="text" maxlength="100" required
+                   placeholder="Contoh: Latihan soal UTS Struktur Data">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="cf-subject">Mata kuliah</label>
+              <input id="cf-subject" name="subject" type="text" maxlength="100" list="subject-options" required
+                     placeholder="Ketik atau pilih">
+              <datalist id="subject-options">
+                <option value="Dasar-Dasar Pemrograman 1"></option>
+                <option value="Dasar-Dasar Pemrograman 2"></option>
+                <option value="Matematika Dasar 1"></option>
+                <option value="Matematika Dasar 2"></option>
+                <option value="Matematika Diskret 1"></option>
+                <option value="Matematika Diskret 2"></option>
+                <option value="Pengantar Sistem Digital"></option>
+                <option value="Struktur Data dan Algoritma"></option>
+                <option value="Aljabar Linier"></option>
+                <option value="Statistika dan Probabilitas"></option>
+                <option value="Basis Data"></option>
+                <option value="Sistem Operasi"></option>
+              </datalist>
+            </div>
+            <div class="field">
+              <label for="cf-topic">Topik <span class="optional">(opsional)</span></label>
+              <input id="cf-topic" name="topic" type="text" maxlength="100" placeholder="Contoh: linked list">
+            </div>
+          </div>
+          <div class="field">
+            <label for="cf-description">Rencana sesi <span class="optional">(opsional)</span></label>
+            <textarea id="cf-description" name="description" rows="4" maxlength="1000"
+                      placeholder="Apa yang akan dibahas, apa yang perlu dibawa"></textarea>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Waktu</legend>
+          <div class="field-row">
+            <div class="field">
+              <label for="cf-starts">Mulai (WIB)</label>
+              <input id="cf-starts" name="startsAt" type="datetime-local" required>
+            </div>
+            <div class="field">
+              <label for="cf-ends">Selesai (WIB)</label>
+              <input id="cf-ends" name="endsAt" type="datetime-local" required>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Tempat dan kapasitas</legend>
+          <div class="field">
+            <span class="label" id="cf-mode-label">Mode</span>
+            <div class="choice-group" role="radiogroup" aria-labelledby="cf-mode-label">
+              <label class="choice">
+                <input type="radio" name="mode" value="OFFLINE" checked>
+                <span>Offline <span class="choice__hint">tatap muka di kampus atau tempat publik</span></span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="mode" value="ONLINE">
+                <span>Online <span class="choice__hint">lewat link meeting</span></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="mode-fields" data-mode="OFFLINE">
+            <div class="field">
+              <label for="cf-location">Lokasi</label>
+              <input id="cf-location" name="locationText" type="text" maxlength="150"
+                     placeholder="Contoh: Perpustakaan Pusat UI, lantai 2" aria-describedby="cf-location-hint">
+              <p class="field__hint" id="cf-location-hint">Pakai tempat publik atau ruang kampus. Jangan menulis alamat rumah.</p>
+            </div>
+            <div class="field">
+              <label for="cf-map">Link Google Maps <span class="optional">(opsional)</span></label>
+              <input id="cf-map" name="mapUrl" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/...">
+            </div>
+          </div>
+
+          <div class="mode-fields" data-mode="ONLINE" hidden>
+            <div class="field">
+              <label for="cf-meeting">Link meeting</label>
+              <input id="cf-meeting" name="meetingUrl" type="url" inputmode="url"
+                     placeholder="https://meet.google.com/..." aria-describedby="cf-meeting-hint">
+              <p class="field__hint" id="cf-meeting-hint">Hanya peserta yang sudah bergabung yang bisa melihat link ini.</p>
+            </div>
+          </div>
+
+          <div class="field field--narrow">
+            <label for="cf-capacity">Kapasitas</label>
+            <input id="cf-capacity" name="capacity" type="number" min="2" max="20" step="1" value="5"
+                   inputmode="numeric" aria-describedby="cf-capacity-hint" required>
+            <p class="field__hint" id="cf-capacity-hint">Termasuk kamu sebagai host. Antara 2 dan 20 orang.</p>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <button class="button button--primary" type="submit">Publikasikan sesi</button>
+          <a href="#beranda">Batal</a>
+        </div>
+      </form>
+    </section>
+
+    <!-- ====================== SESI SAYA ====================== -->
+    <section data-view="saya" class="view" hidden>
+      <h1 tabindex="-1">Sesi saya</h1>
+      <p class="lead">Sesi yang kamu buat dan sesi yang kamu ikuti, termasuk yang sudah lewat.</p>
+      <div class="my-grid">
+        <section aria-labelledby="hosted-title">
+          <div class="section-head">
+            <h2 id="hosted-title">Yang kamu buat</h2>
+          </div>
+          <div id="hosted-list"></div>
+        </section>
+        <section aria-labelledby="joined-title">
+          <div class="section-head">
+            <h2 id="joined-title">Yang kamu ikuti</h2>
+          </div>
+          <div id="joined-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ====================== PROFIL ====================== -->
+    <section data-view="profil" class="view form-page form-page--narrow" hidden>
+      <h1 tabindex="-1">Profil</h1>
+      <dl class="facts facts--single">
+        <div><dt>Username</dt><dd id="pr-username"></dd></div>
+        <div><dt>Email</dt><dd id="pr-email"></dd></div>
+        <div><dt>Status email</dt><dd id="pr-verified"></dd></div>
+      </dl>
+
+      <form id="name-form" class="stack" novalidate>
+        <fieldset>
+          <legend>Nama tampilan</legend>
+          <div class="field">
+            <label for="pr-display-name">Nama yang dilihat peserta lain</label>
+            <input id="pr-display-name" name="displayName" type="text" maxlength="50" aria-describedby="pr-display-name-hint" required>
+            <p class="field__hint" id="pr-display-name-hint">Sesi yang sudah kamu buat tetap memakai nama lama.</p>
+          </div>
+          <div class="form-actions form-actions--tight">
+            <button class="button button--primary" type="submit">Simpan nama</button>
+          </div>
+        </fieldset>
+      </form>
+
+      <fieldset>
+        <legend>Keamanan</legend>
+        <p class="muted">Kami kirim tautan ke email akunmu untuk membuat password baru.</p>
+        <div class="form-actions form-actions--tight">
+          <button class="button" type="button" id="profile-reset">Kirim email reset password</button>
+        </div>
+      </fieldset>
+    </section>
+
+    <!-- ====================== TIDAK DITEMUKAN ====================== -->
+    <section data-view="tidak-ada" class="view" hidden>
+      <div class="empty empty--page">
+        <h1 tabindex="-1">Halaman tidak ditemukan</h1>
+        <p class="muted">Alamat ini tidak ada di RuangBareng.</p>
+        <a class="button" href="#beranda">Ke beranda</a>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <form method="dialog">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-message"></p>
+      <div class="dialog__actions">
+        <button class="button" value="cancel" type="submit">Jangan</button>
+        <button class="button button--danger" value="confirm" type="submit" id="confirm-yes"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="site-footer">
+    <p>RuangBareng adalah prototipe proyek DDP1 Fasilkom UI. Akun terpisah dari SSO UI.</p>
+  </footer>
+</body>
+</html>
